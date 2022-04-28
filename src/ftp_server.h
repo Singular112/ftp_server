@@ -220,6 +220,12 @@ public:
 	virtual void set_native_encoding(e_encoding encoding) { m_native_encoding = encoding; }
 	e_encoding naive_encoding() const { return m_native_encoding; }
 
+	virtual void set_on_error_callback(void(*msg_callback_t)());
+
+	virtual void set_on_info_callback();
+
+	virtual void set_on_debug_callback();
+
 	virtual bool start(uint16_t port = FTPSERVER_DEFAULT_PORT);
 
 	virtual void stop();

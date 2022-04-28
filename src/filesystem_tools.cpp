@@ -114,14 +114,15 @@ std::string get_directory_path(const std::string& fname)
 
 std::string application_directory()
 {
-#ifdef WIN32
+#if defined(WIN32)
 	char buffer[MAX_PATH] = { 0 };
 	GetModuleFileNameA(NULL, buffer, MAX_PATH);
 	return get_directory_path(buffer);
+#elif defined(__linux__)
+	char result[PATH_MAX];
+	ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+	return std::string(result, (count > 0) ? count : 0);
 #else
-	//char result[PATH_MAX];
-	//ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-	//return std::string(result, (count > 0) ? count : 0);
 	return "/";
 #endif
 }
@@ -159,12 +160,16 @@ bool check_directory_exists(const std::string& path)
 
 	return (file_attr & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY;
 #else
+#ifndef __linux__ // ESP32
 	std::string fixed_path = path;
 	// fix bug in esp-idf api
 	if (fixed_path[fixed_path.size() - 1] == '/')
 	{
 		fixed_path.resize(fixed_path.size() - 1);
 	}
+#else
+	std::string& fixed_path = path;
+#endif
 
 	struct stat st;
 	bool ok = (stat(fixed_path.c_str(), &st) == 0)
@@ -253,7 +258,7 @@ bool remove_directory_r(const std::string& path, bool remove_files)
 	return true;
 #else
 	std::string target_path = helpers::rebuild_path(path);
-
+#ifndef __linux__ // ESP32
 	// fix esp-idf bug
 	{
 		if (target_path[target_path.size() - 1] == '/')
@@ -261,6 +266,7 @@ bool remove_directory_r(const std::string& path, bool remove_files)
 			target_path.resize(target_path.size()- 1);
 		}
 	}
+#endif
 
 	struct dirent* entry = nullptr;
 

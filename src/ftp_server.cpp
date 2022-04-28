@@ -1212,7 +1212,7 @@ void ftp_server_c::handle_command(ftp_client_connection_c* client_connection,
 		struct stat file_stats;
 		if (stat(full_path.c_str(), &file_stats))
 		{
-			// todo: send error
+			send_system_error(client_connection);
 			return;
 		}
 
@@ -1223,19 +1223,15 @@ void ftp_server_c::handle_command(ftp_client_connection_c* client_connection,
 	break;
 	case e_ftpcmd_mkd:
 	{
-		std::string translated_path;
+		auto full_path = client_connection->current_directory() + command_value;
 
-		if (client_connection->current_encoding() == e_encoding_utf8)
-		{
-			translated_path.resize(MAX_PATH);
-			convert_utf8_to_windows1251(command_value.c_str(), &translated_path[0], translated_path.size());
-		}
-		else
-		{
-			translated_path = command_value;
-		}
-
-		auto full_path = client_connection->current_directory() + translated_path;
+		translate_path
+		(
+			client_connection,
+			full_path,
+			client_connection->current_encoding(),
+			m_native_encoding
+		);
 
 		auto mkdir_result = mkdir(full_path.c_str()
 #ifndef WIN32
@@ -1478,7 +1474,7 @@ void ftp_server_c::handle_retr_command(ftp_client_connection_c* client_connectio
 
 	// check file available
 	{
-		printf("open file: %s\n", full_file_path.c_str());
+		//printf("open file: %s\n", full_file_path.c_str());
 
 		file_handle_ptr.reset(fopen(full_file_path.c_str(), "rb"));
 
@@ -1602,11 +1598,6 @@ void ftp_server_c::handle_stor_command(ftp_client_connection_c* client_connectio
 		while (true)
 		{
 			auto received_chunk_sz = recv(data_socket_ptr.get(), buf, sizeof(buf), 0);
-			if (received_chunk_sz < 0)
-			{
-				perror("read failed");
-				// todo
-			}
 
 			if (received_chunk_sz == 0)
 			{
@@ -1614,6 +1605,7 @@ void ftp_server_c::handle_stor_command(ftp_client_connection_c* client_connectio
 			}
 			else if (received_chunk_sz < 0)
 			{
+				printf("read failed (received_chunk_sz: %d)\n", received_chunk_sz);
 				send_system_error(client_connection);
 				return;
 			}
