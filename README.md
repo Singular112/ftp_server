@@ -5,12 +5,13 @@ Where is no arduino library. It's standalone multiplatform code of ftp-server.
 
 transfer speed ~220kb/sec
 
-Unrealized features:
+Limitations:
 - no multi-session suport
 - binary mode only
 - no auth (any login succeed)
 - not all ftp commands are implemented
 - server messages callback api (where are many debug messages outputs via printf)
+- correct stop of the ftp server (laziness)
 
 There are several bugs in code i know - passive mode is need to fix, but overall code are working.
 
@@ -23,4 +24,4 @@ Windows\Linux\ESP32(esp-idf) examples are contains in 'solutions' folder.
 --------
 
 History:
-2022-04-30. Code
+2022-04-30. ...
